@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Product Demo - Live Meeting</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0b0d;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Email Entry Page */
+        .email-entry-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease;
+        }
+        .email-entry-page.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .email-card {
+            background: white;
+            border-radius: 20px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+        }
+        .email-card h1 {
+            color: #1a1d21;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .email-card p {
+            color: #8b8d94;
+            margin-bottom: 30px;
+            font-size: 1.05em;
+        }
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            color: #1a1d21;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e4e6eb;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s;
+            outline: none;
+        }
+        .input-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .input-group input.error {
+            border-color: #ff4444;
+        }
+        .error-message {
+            color: #ff4444;
+            font-size: 0.85em;
+            margin-top: 6px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        .join-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .join-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .join-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Pre-Meeting Loader */
+        .pre-meeting-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0b0d 0%, #1a1d21 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .pre-meeting-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(74, 158, 255, 0.1);
+            border-top-color: #4a9eff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 25px;
+        }
+        .loader-text {
+            color: #e4e6eb;
+            font-size: 1.3em;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        .loader-subtitle {
+            color: #8b8d94;
+            font-size: 0.95em;
+        }
+        .top-bar {
+            height: 60px;
+            background: #1a1d21;
+            border-bottom: 1px solid #2d3139;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        .participants-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #2d3139;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #e4e6eb;
+            font-size: 0.9em;
+        }
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #2d3139;
+            border: none;
+            color: #e4e6eb;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .icon-btn:hover { background: #3a3f47; }
+        .main-container {
+            display: flex;
+            height: calc(100vh - 140px);
+        }
+        .video-area {
+            flex: 1;
+            background: #000;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #remoteVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+        .loading-state {
+            position: absolute;
+            color: white;
+            text-align: center;
+            z-index: 10;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #4a9eff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .video-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            background: #ff4444;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .sidebar {
+            width: 360px;
+            background: #1a1d21;
+            border-left: 1px solid #2d3139;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid #2d3139;
+        }
+        .sidebar-tab {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            color: #8b8d94;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .sidebar-tab.active {
+            color: #4a9eff;
+            border-bottom-color: #4a9eff;
+        }
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        .participant-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #2d3139;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .participant-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        .participant-name {
+            color: #e4e6eb;
+            font-weight: 500;
+        }
+        .participant-status {
+            color: #8b8d94;
+            font-size: 0.8em;
+        }
+        .chat-message {
+            margin-bottom: 16px;
+        }
+        .message-author {
+            color: #4a9eff;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+        .message-time {
+            color: #8b8d94;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+        .message-content {
+            background: #2d3139;
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: #e4e6eb;
+            margin-top: 6px;
+        }
+        .system-message {
+            text-align: center;
+            color: #8b8d94;
+            font-size: 0.8em;
+            margin: 12px 0;
+            font-style: italic;
+        }
+        .message-author {
+            color: #4a9eff;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+        .message-time {
+            color: #8b8d94;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+        .message-content {
+            background: #2d3139;
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: #e4e6eb;
+            margin-top: 6px;
+        }
+        .message-content a {
+            color: #4a9eff;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        .message-content a:hover {
+            text-decoration: underline;
+        }
+        .chat-input-container {
+            padding: 15px 20px;
+            border-top: 1px solid #2d3139;
+        }
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+            background: #2d3139;
+            border-radius: 20px;
+            padding: 8px 16px;
+        }
+        #chatInput {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: #e4e6eb;
+        }
+        .send-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #4a9eff;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        .bottom-bar {
+            height: 80px;
+            background: #1a1d21;
+            border-top: 1px solid #2d3139;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .control-button {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            color: #e4e6eb;
+            cursor: pointer;
+            font-size: 1.4em;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .control-button:hover {
+            background: #3a3f47;
+            transform: scale(1.05);
+        }
+        .control-button.active { background: #4a9eff; }
+        .control-button.danger { background: black; }
+        .control-label {
+            position: absolute;
+            bottom: -25px;
+            font-size: 0.7em;
+            color: #8b8d94;
+        }
+        .hidden { display: none !important; }
+        .error-text { color: #ff4444; }
+        .success-text { color: #4ade80; }
+    </style>
+</head>
+<body>
+    <!-- Email Entry Page -->
+    <div class="email-entry-page" id="emailEntryPage">
+        <div class="email-card">
+            <h1>Join Meeting</h1>
+            <p>Enter your email to join the product demo</p>
+            <form id="emailForm" onsubmit="handleEmailSubmit(event)">
+                <div class="input-group">
+                    <label for="emailInput">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="emailInput" 
+                        placeholder="you@example.com" 
+                        required
+                        autocomplete="email"
+                    />
+                    <div class="error-message" id="emailError">Please enter a valid email address</div>
+                </div>
+                <button type="submit" class="join-btn">Join Meeting →</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Loading Spinner Page -->
+    <div class="pre-meeting-loader" id="preMeetingLoader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Preparing your meeting...</div>
+        <div class="loader-subtitle">Connecting you in a moment</div>
+    </div>
+    
+    <!-- Meeting Interface -->
+    <div class="meeting-interface" id="meetingInterface">
+        <div class="top-bar">
+            <div class="participants-badge">
+                <span>👥</span>
+                <span id="participantCount">Connecting...</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="icon-btn" onclick="toggleFullscreen()">⛶</button>
+            </div>
+        </div>
+        
+        <div class="main-container">
+            <div class="video-area">
+                <div class="loading-state" id="loadingState">
+                    <div class="spinner"></div>
+                    <div id="statusText">Initializing LiveKit...</div>
+                </div>
+                <video id="remoteVideo" autoplay playsinline muted></video>
+                <div class="video-overlay">
+                    <div class="live-indicator"></div>
+                    <span>Product Demo - LIVE</span>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="sidebar-tabs">
+                    <button class="sidebar-tab active" onclick="switchTab('people')">People</button>
+                    <button class="sidebar-tab" onclick="switchTab('chat')">Chat</button>
+                </div>
+                
+                <div class="sidebar-content">
+                    <div class="tab-panel active" id="peoplePanel">
+                        <div id="participantList">
+                            <div class="participant-item">
+                                <div class="participant-avatar">🎬</div>
+                                <div>
+                                    <div class="participant-name">Oncreate Demo Agent</div>
+                                    <div class="participant-status">Presenting</div>
+                                </div>
+                            </div>
+                            <div class="participant-item" >
+                                <div>
+                                    <div class="participant-name">Guest</div>
+                                    <div class="participant-status">Attending</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="tab-panel" id="chatPanel">
+                        <div id="chatMessages">
+                            <div class="system-message">Welcome! 👋</div>
+                            <div class="chat-message">
+                            <div>
+                                <span class="message-author">Demo Agent</span>
+                                <span class="message-time">Now</span>
+                            </div>
+                                <div class="message-content">
+                                    Schedule a follow-up meeting: <a href="https://calendly.com/oncreate/30min?month=2026-01" target="_blank">https://calendly.com/oncreate/30min?month=2026-01</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <input id="chatInput" placeholder="Send a message..." />
+                        <button class="send-btn" onclick="sendMessage()">➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bottom-bar">
+            <button class="control-button" onclick="toggleMute()">
+                <svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 511.999"><path d="M256.001 0C396.8 0 512 115.2 512 256c0 140.799-115.2 255.999-255.999 255.999C115.201 511.999 0 396.799 0 256 0 115.2 115.201 0 256.001 0zm39.23 174.377v65.437c0 56.175-78.463 56.175-78.463 0v-65.437c0-57.755 78.463-57.755 78.463 0zm-29.492 157.905v39.046c0 12.813-19.474 12.813-19.474 0v-39.046a84.378 84.378 0 01-25.903-7.296 85.791 85.791 0 01-24.599-17.195l-.167-.179c-7.808-7.839-14.106-17.182-18.405-27.519a84.508 84.508 0 01-6.494-32.537 9.682 9.682 0 012.867-6.873 9.652 9.652 0 016.873-2.861 9.73 9.73 0 016.885 2.855l.19.212a9.69 9.69 0 012.665 6.667c0 8.876 1.78 17.351 4.994 25.082a66.571 66.571 0 0014.344 21.402c6.097 6.085 13.361 10.999 21.402 14.344a65.134 65.134 0 0025.083 5 65.14 65.14 0 0025.087-5 66.257 66.257 0 0021.391-14.35l.169-.151a66.558 66.558 0 0014.186-21.245 65.204 65.204 0 004.995-25.082 9.714 9.714 0 012.856-6.884 9.724 9.724 0 016.883-2.85c2.682 0 5.12 1.09 6.884 2.85l.196.217a9.704 9.704 0 012.654 6.667 84.658 84.658 0 01-6.482 32.547 85.773 85.773 0 01-18.556 27.711l-.185.167a85.95 85.95 0 01-24.425 17.015 84.696 84.696 0 01-25.914 7.286z"/></svg>
+                <span class="control-label">Mute</span>
+            </button>
+            <button class="control-button" onclick="toggleChat()">
+                <svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 452.387"><path fill-rule="nonzero" d="M276.915 436.666c-32.989-9.896-62.965-28.911-87.618-55.815 6.175.567 12.783.958 19.819 1.159 32.31.949 63.167-3.3 91.339-11.815 29.561-8.937 56.687-22.776 79.927-40.41 23.979-18.196 43.56-40.301 57.238-65.17 12.232-22.234 19.84-46.769 21.81-72.836a195.403 195.403 0 0112.994 13.486c19.513 22.316 33.012 48.301 37.715 75.028 4.856 27.594.457 55.851-16.114 81.723-5.048 7.88-11.248 15.52-18.686 22.824l8.165 49.068a15.502 15.502 0 01-.8 8.562c-3.132 8.017-12.171 11.976-20.188 8.844l-55.504-21.826c-44.846 17.676-89.637 19.315-130.097 7.178z"/><path fill="#D8F0F0" d="M212.522 382.09c51.415 47.307 122.9 61.072 194.383 30.61l61.283 24.098-9.593-57.651c57.022-49.859 43.787-119.134-1.727-167.884-3.555 18.854-10.111 36.745-19.248 53.352-13.678 24.869-33.259 46.974-57.238 65.17-23.24 17.634-50.366 31.473-79.927 40.41-27.181 8.215-56.861 12.459-87.933 11.895z"/><path fill-rule="nonzero" d="M369.951 55.167c38.685 33.165 61.879 78.348 60.427 127.704l-.004.172c-1.516 49.407-27.413 93.189-68.065 124.036-39.713 30.136-93.646 47.911-152.383 46.183-15.058-.442-29.669-1.977-43.59-4.684-11.877-2.308-23.389-5.475-34.399-9.545L25.552 371.527l31.949-75.984c-17.241-15.38-31.223-33.198-41.066-52.706C5.175 220.521-.707 196.009.068 170.392 1.561 120.96 27.462 77.156 68.131 46.297c85.638-64.984 220.168-61.131 301.82 8.87z"/><path fill="#91DDAC" d="M220.09 15.665c110.235 3.244 197.422 77.965 194.731 166.89-2.688 88.93-94.233 158.397-204.469 155.154-27.75-.815-54.238-5.665-77.796-15.126l-79.801 24.374 23.518-55.933c-38.601-30.58-62.068-73.422-60.651-120.205 2.685-88.93 94.233-158.395 204.468-155.154z"/><path fill-rule="nonzero" d="M129.631 216.936c-5.368 0-9.72-4.352-9.72-9.72s4.352-9.72 9.72-9.72H249.43c5.368 0 9.72 4.352 9.72 9.72s-4.352 9.72-9.72 9.72H129.631zm0-68.927c-5.368 0-9.72-4.352-9.72-9.72 0-5.367 4.352-9.719 9.72-9.719h171.178c5.368 0 9.719 4.352 9.719 9.719 0 5.368-4.351 9.72-9.719 9.72H129.631z"/></svg>
+                <span class="control-label">Chat</span>
+            </button>
+            <button class="control-button danger" onclick="leaveMeeting()">
+                <svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.88 122.88"><defs><style>.cls-1{fill:#ff3b30;fill-rule:evenodd;}</style></defs><title>end-call</title><path class="cls-1" d="M104.89,104.89a61.47,61.47,0,1,1,18-43.45,61.21,61.21,0,0,1-18,43.45ZM74.59,55.72a49.79,49.79,0,0,0-12.38-2.07A41.52,41.52,0,0,0,48,55.8a1.16,1.16,0,0,0-.74.67,4.53,4.53,0,0,0-.27,1.7,16.14,16.14,0,0,0,.2,2c.42,3,.93,6.8-2.42,8l-.22.07-12,3.24-.12,0A4.85,4.85,0,0,1,28,70a11.44,11.44,0,0,1-2.68-4.92,11,11,0,0,1,.42-6.93A23.69,23.69,0,0,1,29,52.39,21.52,21.52,0,0,1,36.55,46a42.74,42.74,0,0,1,10.33-3.6l.29-.07C49,42,51,41.48,53.08,41.17a62.76,62.76,0,0,1,25.14,1.59c6.87,2,13,5.43,16.8,10.7a13.88,13.88,0,0,1,2.92,9.59,12.64,12.64,0,0,1-4.88,8.43,1.34,1.34,0,0,1-1.26.28L78.6,68.38A3.69,3.69,0,0,1,75.41,66a7.73,7.73,0,0,1-.22-4,15.21,15.21,0,0,1,.22-1.6c.3-1.89.63-4.06-.89-4.72Z"/></svg>
+                <span class="control-label">Leave</span>
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import LiveKit from CDN
+        import * as LivekitClient from 'https://cdn.jsdelivr.net/npm/livekit-client@2.5.8/dist/livekit-client.esm.mjs';
+        
+        console.log('🎯 LiveKit module loaded:', LivekitClient);
+        
+        // Make globally available
+        window.LivekitClient = LivekitClient;
+        
+        let room = null;
+        let userEmail = '';
+        let userName = '';
+        
+        // Handle email form submission
+        window.handleEmailSubmit = function(event) {
+            event.preventDefault();
+            
+            const emailInput = document.getElementById('emailInput');
+            const email = emailInput.value.trim();
+            
+            // Basic email validation
+            
+            
+            // Store email and extract name
+            userEmail = email;
+            userName = email.split('@')[0]; // Use part before @ as username
+            
+            // Hide email entry page
+            document.getElementById('emailEntryPage').classList.add('hidden');
+            
+            // Show loading spinner
+            document.getElementById('preMeetingLoader').classList.add('active');
+            
+            // Start connection after a short delay
+            setTimeout(() => {
+                
+                connectToRoom();
+            }, 500);
+        }
+        
+        function updateStatus(message, isError = false) {
+            const statusEl = document.getElementById('statusText');
+            statusEl.textContent = message;
+            statusEl.className = isError ? 'error-text' : 'success-text';
+        }
+        
+        async function connectToRoom() {
+            try {
+                updateStatus('Getting access token...');
+                
+                // Get token from server (userName is already set from email form)
+                const response = await fetch('/token?name=' + encodeURIComponent(userName));
+                if (!response.ok) {
+                    throw new Error('Failed to get token from server');
+                }
+                
+                const data = await response.json();
+                console.log('✅ Token received');
+                
+                updateStatus('Connecting to room...');
+                
+                // Create room instance
+                room = new LivekitClient.Room({
+                    adaptiveStream: true,
+                    dynacast: true,
+                });
+                
+                console.log('✅ Room instance created');
+                
+                // Setup event handlers
+                room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+                    console.log('📹 Track subscribed:', track.kind, 'from', participant.identity);
+                    
+                    if (track.kind === LivekitClient.Track.Kind.Video) {
+                        const videoEl = document.getElementById('remoteVideo');
+                        track.attach(videoEl);
+                        document.getElementById('loadingState').classList.add('hidden');
+                        updateStatus('Connected!');
+                        console.log('✅ Video track attached');
+                        
+                        // Hide loader and show meeting interface
+                        setTimeout(() => {
+                            document.getElementById('preMeetingLoader').classList.remove('active');
+                            document.getElementById('meetingInterface').classList.add('active');
+                        }, 800);
+                    }
+                });
+                
+                room.on(LivekitClient.RoomEvent.ParticipantConnected, (participant) => {
+                    console.log('👤 Participant joined:', participant.identity);
+                    addSystemMessage(`${participant.identity} joined`);
+                    updateParticipants();
+                });
+                
+                room.on(LivekitClient.RoomEvent.ParticipantDisconnected, (participant) => {
+                    console.log('👋 Participant left:', participant.identity);
+                    addSystemMessage(`${participant.identity} left`);
+                    updateParticipants();
+                });
+                
+                room.on(LivekitClient.RoomEvent.DataReceived, (payload, participant) => {
+                    const decoder = new TextDecoder();
+                    const message = JSON.parse(decoder.decode(payload));
+                    if (message.type === 'chat') {
+                        addChatMessage(participant.identity, message.text);
+                    }
+                });
+                
+                room.on(LivekitClient.RoomEvent.Disconnected, () => {
+                    console.log('❌ Disconnected from room');
+                    updateStatus('Disconnected', true);
+                });
+                
+                // Connect to room
+                await room.connect('{{ LIVEKIT_URL }}', data.token);
+                
+                console.log('✅ Connected to room:', room.name);
+                updateStatus('Connected - Waiting for stream...');
+                updateParticipants();
+                document.getElementById('preMeetingLoader').classList.add('hidden');
+                
+            } catch (error) {
+                console.error('❌ Connection error:', error);
+                updateStatus('Connection failed: ' + error.message, true);
+                
+                // Hide loader and show error
+                document.getElementById('preMeetingLoader').classList.remove('active');
+                
+                setTimeout(() => {
+                    if (confirm('Failed to connect. Retry?')) {
+                        location.reload();
+                    }
+                }, 2000);
+            }
+        }
+        
+        function updateParticipants() {
+            if (!room) return;
+            const count = room.remoteParticipants.size + 1;
+            document.getElementById('participantCount').textContent = count + ' in call';
+        }
+        
+        function addChatMessage(author, text) {
+            const chatDiv = document.getElementById('chatMessages');
+            const msg = document.createElement('div');
+            msg.className = 'chat-message';
+            msg.innerHTML = `
+                <div>
+                    <span class="message-author">${escapeHtml(author)}</span>
+                    <span class="message-time">${new Date().toLocaleTimeString()}</span>
+                </div>
+                <div class="message-content">${escapeHtml(text)}</div>
+            `;
+            chatDiv.appendChild(msg);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+        
+        function addSystemMessage(text) {
+            const chatDiv = document.getElementById('chatMessages');
+            const msg = document.createElement('div');
+            msg.className = 'system-message';
+            msg.textContent = text;
+            chatDiv.appendChild(msg);
+        }
+        
+        window.sendMessage = function() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !room) return;
+            
+            const data = { type: 'chat', text };
+            const encoder = new TextEncoder();
+            const encoded = encoder.encode(JSON.stringify(data));
+            
+            room.localParticipant.publishData(encoded, LivekitClient.DataPacket_Kind.RELIABLE);
+            addChatMessage(userName + ' (You)', text);
+            input.value = '';
+        }
+        
+        window.switchTab = function(tab) {
+            document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Panel').classList.add('active');
+        }
+        
+        window.toggleMute = function() {
+            event.target.classList.toggle('active');
+        }
+        
+        window.toggleChat = function() {
+            document.getElementById('chatPanel').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        window.toggleFullscreen = function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        window.leaveMeeting = function() {
+            if (confirm('Leave meeting?')) {
+                if (room) room.disconnect();
+                window.close();
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        
+        // Remove error styling when user starts typing
+        document.getElementById('emailInput').addEventListener('input', function() {
+            this.classList.remove('error');
+            document.getElementById('emailError').classList.remove('show');
+        });
+        
+    </script>
+</body>
+</html>
