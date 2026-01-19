@@ -1069,12 +1069,7 @@ async def entrypoint(ctx: JobContext):
         browser = await playwright.chromium.launch(
             headless=True,
             slow_mo=2000,
-            args=[
-                '--disable-gpu',
-                '--disable-dev-shm-usage',
-                '--disable-setuid-sandbox',
-                '--no-sandbox',
-            ]
+            
         )
         context = await browser.new_context()
         page = await context.new_page()
